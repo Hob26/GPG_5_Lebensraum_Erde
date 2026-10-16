@@ -1,0 +1,145 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Erde-Champion</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Nunito:wght@600;800;900&display=swap">
+<style>
+/* Heller „Atlas“-Look wie die Canva-Folien. */
+:root{
+  --paper:#f4ede4; --card:#fffaf3; --ink:#3f3a34; --muted:#7a6f62; --line:#e4d8c8;
+  --gold:#e8a33d; --rust:#c0573e; --blue:#2f6fae; --ok:#3f8f4a; --bad:#c0392b;
+  --tro:#c9473a; --sub:#e3ad2b; --gem:#4f9a43; --kalt:#4d9fd6;
+  --display:"Cinzel", Georgia, serif; --body:"Nunito", system-ui, sans-serif;
+  color-scheme: light;
+}
+[hidden]{display:none!important}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-weight:600;margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 24px}
+.wrap{max-width:1200px;margin:0 auto;display:grid;gap:12px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 20px;padding-top:16px}
+h1{font-family:var(--display);font-size:clamp(1.4rem,3.4vw,2.3rem);letter-spacing:.04em;margin:0}
+.tag{color:var(--rust);font-weight:900;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase}
+.tabs{display:flex;flex-wrap:wrap;gap:8px}
+.tabs button{font:900 1.02rem var(--body);background:var(--card);color:var(--ink);border:2px solid var(--line);border-radius:999px;padding:9px 16px}
+.tabs button[aria-selected="true"]{background:var(--gold);border-color:var(--gold);color:#2b2620}
+button{cursor:pointer}
+button:focus-visible,canvas:focus-visible,input:focus-visible{outline:3px solid var(--rust);outline-offset:2px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+.stage{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px;min-width:0}
+canvas{display:block;width:100%;height:auto;touch-action:none}
+.side{display:grid;gap:12px;min-width:0}
+.box{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;min-width:0}
+.kicker{font-size:.8rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--rust)}
+.big{font-size:clamp(1.25rem,3vw,1.7rem);font-weight:900;line-height:1.25}
+.box p{margin:6px 0;line-height:1.5;font-size:1.05rem}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:900 1.05rem var(--body);background:var(--gold);color:#2b2620;border:0;border-radius:999px;padding:11px 22px}
+.btn.ghost{background:var(--paper);border:2px solid var(--line)}
+.answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.answers button{font:900 1.1rem var(--body);background:var(--paper);border:2px solid var(--line);border-radius:14px;padding:12px 10px;color:var(--ink)}
+.answers button.ok{border-color:var(--ok);background:#e3f1e3} .answers button.bad{border-color:var(--bad);background:#f8e1dc}
+.msg{font-weight:900;font-size:1.1rem;min-height:1.5em;line-height:1.4}
+.msg.ok{color:var(--ok)} .msg.bad{color:var(--bad)}
+.score{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:900}
+.prog{height:10px;background:#efe4d4;border-radius:6px;overflow:hidden}.prog i{display:block;height:100%;background:var(--gold);width:0;transition:width .3s}
+.src{color:var(--muted);font-size:.78rem}
+.legend{display:grid;gap:6px}
+.legend button{display:flex;gap:10px;align-items:center;text-align:left;font:800 1.02rem var(--body);background:var(--paper);border:2px solid var(--line);border-radius:12px;padding:8px 10px;color:var(--ink)}
+.legend button[aria-pressed="true"]{border-color:var(--ink)}
+.sw{width:22px;height:22px;border-radius:6px;flex:none}
+.zinfo{font-size:2rem;line-height:1.2}
+/* Sortieren */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:8px}
+.cards button{background:#fff;border:2px solid var(--line);border-radius:14px;padding:8px 6px;font:800 .98rem var(--body);color:var(--ink);display:grid;gap:2px;justify-items:center}
+.cards button .e{font-size:2.3rem;line-height:1.1}
+.cards button[aria-pressed="true"]{border-color:var(--rust);box-shadow:0 0 0 3px #f3c9bd}
+.bins{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:620px){.bins{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bin{border-radius:14px;padding:8px;min-height:120px;border:3px solid;background:#fff;display:grid;align-content:start;gap:6px}
+.bin>button{font:900 1rem var(--body);border:0;border-radius:10px;padding:10px 6px;color:#fff}
+.bin .got{display:flex;flex-wrap:wrap;gap:2px;font-size:1.6rem;justify-content:center}
+.bin.flash{animation:fl .5s}
+@keyframes fl{50%{transform:scale(1.04)}}
+input[type=range]{width:100%;accent-color:var(--rust);height:34px}
+.meter{height:22px;border-radius:12px;background:#efe4d4;overflow:hidden}.meter i{display:block;height:100%;transition:width .2s}
+.stars{font-size:2rem;letter-spacing:.1em}
+
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:700px){.board{grid-template-columns:1fr}}
+.cat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px;display:grid;gap:6px}
+.cat h3{margin:0;font:900 1.05rem var(--body);display:flex;gap:8px;align-items:center}
+.cat h3 .n{font-size:.78rem;color:var(--rust);letter-spacing:.06em}
+.cat .e{font-size:1.7rem}
+.pts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pts button{font:900 1.15rem var(--body);border:0;border-radius:12px;padding:12px 4px;background:var(--gold);color:#2b2620}
+.pts button:disabled{background:#efe4d4;color:#b5a894;cursor:default}
+.pts button.r{background:#cfe8cf;color:#2e6b34}.pts button.w{background:#f3d3cc;color:#9b3a2a}
+.teams{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.team{border:2px solid var(--line);background:var(--card);border-radius:14px;padding:6px 12px;font-weight:900;font-variant-numeric:tabular-nums}
+.team.on{border-color:var(--rust);box-shadow:0 0 0 3px #f3c9bd}
+.modal{position:fixed;inset:0;background:rgba(43,38,32,.55);display:grid;place-items:center;padding:16px;z-index:10}
+.card{background:var(--card);border-radius:20px;max-width:720px;width:100%;padding:20px;display:grid;gap:10px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+.card .e{font-size:3rem;line-height:1}
+</style>
+
+<div class="wrap">
+  <header>
+    <div><div class="tag">GPG 5 · 2.9 Wiederholung · Lebensraum Erde</div><h1>Erde-Champion 🏆</h1></div>
+    <div class="row"><label class="kicker" for="nTeams">Spieler / Teams</label>
+      <select id="nTeams" style="font:900 1rem var(--body);padding:8px;border-radius:10px;border:2px solid var(--line);background:var(--card)"><option value="1">allein</option><option value="2" selected>2 Teams</option><option value="3">3 Teams</option><option value="4">4 Teams</option></select>
+      <button class="btn ghost" id="restart">↺ Neu</button></div>
+  </header>
+  <div class="box"><div class="row" style="justify-content:space-between"><div class="teams" id="teams"></div><div class="src" id="left"></div></div>
+    <p class="src" style="margin:6px 0 0">Wähle ein Thema und eine Schwierigkeit: <b>100</b> = leicht ⭐ · <b>200</b> = mittel ⭐⭐ · <b>300</b> = Profi ⭐⭐⭐</p></div>
+  <div class="board" id="board"></div>
+  <p class="src">Fragen zu den Stunden 2.1–2.8 der Einheit „Lebensraum Erde“.</p>
+</div>
+<div class="modal" id="modal" hidden><div class="card" role="dialog" aria-modal="true" aria-labelledby="mq">
+  <div class="row" style="justify-content:space-between"><div class="kicker" id="mk"></div><div class="score" id="mt"></div></div>
+  <div class="e" id="me"></div>
+  <p class="big" id="mq"></p>
+  <div class="answers" id="ma"></div>
+  <p class="msg" id="mm" aria-live="polite"></p>
+  <div class="row"><button class="btn" id="mn" hidden>Zurück zum Spielbrett ➜</button></div>
+</div></div>
+<script>
+var CATS=[
+ {n:"2.1",t:"Sonnensystem",e:"☀️",q:[["Wie viele Planeten kreisen um die Sonne?",["8","9","7"]],["Der wievielte Planet von der Sonne ist die Erde?",["der 3.","der 4.","der 2."]],["Warum gibt es auf der Venus kein Leben?",["Sie ist zu heiß (+460 °C).","Sie ist zu kalt.","Dort gibt es kein Licht."]]]},
+ {n:"2.2",t:"Aufbau der Erde",e:"🌋",q:[["Wie heißt die äußerste Schicht der Erde?",["Erdkruste","Erdkern","Erdmantel"]],["Welche Schicht ist flüssig?",["der äußere Kern","der innere Kern","die Erdkruste"]],["Wie heißt geschmolzenes Gestein tief in der Erde?",["Magma","Lava","Sand"]]]},
+ {n:"2.3",t:"Kontinente & Ozeane",e:"🗺",q:[["Wie viele Kontinente gibt es?",["7","5","9"]],["Welcher ist der größte Ozean?",["Pazifik","Atlantik","Indischer Ozean"]],["Wie viel der Erde ist mit Wasser bedeckt?",["ca. 71 %","ca. 29 %","ca. 50 %"]]]},
+ {n:"2.4",t:"Himmelsrichtungen",e:"🧭",q:[["Wo geht die Sonne auf?",["im Osten","im Westen","im Norden"]],["„Nie Ohne Seife Waschen“: Welche Richtung kommt nach Norden?",["Osten","Westen","Süden"]],["Welche Richtung liegt zwischen Süden und Westen?",["Südwesten","Nordwesten","Südosten"]]]},
+ {n:"2.5",t:"Tag und Nacht",e:"🌗",q:[["Warum gibt es Tag und Nacht?",["Die Erde dreht sich um sich selbst.","Die Sonne geht schlafen.","Der Mond verdeckt die Sonne."]],["Wie lange dauert eine Drehung der Erde?",["24 Stunden","1 Jahr","12 Stunden"]],["Bei uns ist Mittag. Wie ist es auf der anderen Seite der Erde?",["Nacht","auch Mittag","früher Morgen"]]]},
+ {n:"2.6",t:"Gradnetz",e:"🌐",q:[["Wie heißt der längste Breitenkreis?",["Äquator","Nullmeridian","Polarkreis"]],["Durch welchen Ort läuft der Nullmeridian?",["Greenwich (London)","Paris","München"]],["Welche Koordinaten hat München ungefähr?",["48° N / 11° O","11° N / 48° O","0° / 0°"]]]},
+ {n:"2.7",t:"Atlas & Karten",e:"📖",q:[["Was erklärt die Zeichen und Farben einer Karte?",["die Legende","der Maßstab","der Nordpfeil"]],["Würzburg liegt in B2. Was ist „B“?",["die Spalte (oben)","die Zeile (am Rand)","die Seite"]],["Eine Karte zeigt nur ein Thema, z. B. Einwohner. Sie heißt …",["thematische Karte","physische Karte","politische Karte"]]]},
+ {n:"2.8",t:"Klimazonen",e:"🌡",q:[["In welcher Klimazone liegt Bayern?",["gemäßigte Zone","Tropen","kalte Zone"]],["Wo fallen die Sonnenstrahlen steil ein?",["am Äquator","am Nordpol","in Bayern"]],["Welche Linie trennt Tropen und Subtropen?",["Wendekreis","Polarkreis","Nullmeridian"]]]},
+ {n:"2.8",t:"Landschaften",e:"🌳",q:[["Wo wächst der Regenwald?",["in den Tropen","in der kalten Zone","in der gemäßigten Zone"]],["Welcher Wald wächst bei uns in Bayern?",["Laub- und Mischwald","Regenwald","gar kein Wald"]],["Warum wachsen in der Tundra keine Bäume?",["Es ist zu kalt, der Boden ist gefroren.","Es regnet zu viel.","Es ist zu heiß."]]]}];
+var teams=[],cur=0,done=0,open=null;
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function start(){var n=+document.getElementById('nTeams').value;teams=[];for(var i=0;i<n;i++)teams.push({n:n===1?'Du':'Team '+(i+1),p:0});cur=0;done=0;
+  var b=document.getElementById('board');b.innerHTML='';
+  CATS.forEach(function(c,ci){var d=document.createElement('div');d.className='cat';d.innerHTML='<h3><span class="e">'+c.e+'</span><span><span class="n">'+c.n+'</span><br>'+c.t+'</span></h3><div class="pts"></div>';
+    [100,200,300].forEach(function(p,qi){var bt=document.createElement('button');bt.textContent=p;bt.setAttribute('aria-label',c.t+' für '+p+' Punkte');bt.onclick=function(){ask(ci,qi,bt)};d.querySelector('.pts').appendChild(bt)});b.appendChild(d)});
+  upd()}
+function upd(){var t=document.getElementById('teams');t.innerHTML='';teams.forEach(function(x,i){var s=document.createElement('span');s.className='team'+(i===cur&&teams.length>1?' on':'');s.textContent=x.n+': '+x.p;t.appendChild(s)});
+  document.getElementById('left').textContent=(27-done)+' Fragen übrig'+(teams.length>1?' · dran: '+teams[cur].n:'')}
+function ask(ci,qi,bt){var c=CATS[ci],q=c.q[qi],pts=(qi+1)*100;open=bt;
+  document.getElementById('mk').textContent=c.n+' '+c.t+' · '+pts+' Punkte '+'⭐'.repeat(qi+1);
+  document.getElementById('mt').textContent=teams.length>1?teams[cur].n+' ist dran':'';
+  document.getElementById('me').textContent=c.e;document.getElementById('mq').textContent=q[0];
+  var box=document.getElementById('ma');box.innerHTML='';delete box.dataset.done;document.getElementById('mm').textContent='';document.getElementById('mm').className='msg';document.getElementById('mn').hidden=true;
+  var ord=shuffle([0,1,2]);ord.forEach(function(k){var b=document.createElement('button');b.textContent=q[1][k];b.onclick=function(){if(box.dataset.done)return;box.dataset.done=1;var m=document.getElementById('mm');
+    if(k===0){b.className='ok';teams[cur].p+=pts;m.textContent='Richtig! +'+pts+' 🎉';m.className='msg ok';bt.className='r'}
+    else{b.className='bad';box.children[ord.indexOf(0)].className='ok';m.textContent='Leider falsch. Richtig: '+q[1][0];m.className='msg bad';bt.className='w'}
+    bt.disabled=true;done++;document.getElementById('mn').hidden=false;document.getElementById('mn').focus()};box.appendChild(b)});
+  document.getElementById('modal').hidden=false;box.firstChild.focus()}
+document.getElementById('mn').onclick=function(){document.getElementById('modal').hidden=true;if(this.dataset.end){delete this.dataset.end;this.textContent='Zurück zum Spielbrett ➜';start();return}cur=(cur+1)%teams.length;upd();
+  if(done===27){var best=teams.slice().sort(function(a,b){return b.p-a.p});document.getElementById('mk').textContent='Spiel vorbei';document.getElementById('mt').textContent='';document.getElementById('me').textContent='🏆';
+    document.getElementById('mq').innerHTML=teams.length>1?('<b>'+best[0].n+'</b> ist Erde-Champion mit '+best[0].p+' Punkten!'):('Du hast <b>'+teams[0].p+' von 5400</b> Punkten!');
+    document.getElementById('ma').innerHTML='';document.getElementById('mm').textContent='';var n=document.getElementById('mn');n.textContent='Neues Spiel';n.hidden=false;n.dataset.end=1;document.getElementById('modal').hidden=false}
+  else if(open)open.focus()};
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!document.getElementById('modal').hidden&&!document.getElementById('mn').hidden)document.getElementById('mn').click()});
+document.getElementById('restart').onclick=start;document.getElementById('nTeams').onchange=start;start();
+</script>
+
+</body></html>
