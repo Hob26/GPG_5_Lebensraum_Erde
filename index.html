@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GPG 5 – Lebensraum Erde</title>
+<style>
+  :root{
+    --bg:#f3f7f4; --card:#ffffff; --ink:#1d2b26; --muted:#5d6f68;
+    --accent:#2f7d5b; --accent2:#3a7fb5; --soon:#c9d3cf; --line:#dde6e1;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif}
+  header{padding:32px 16px 20px;text-align:center}
+  .globe{font-size:56px;line-height:1}
+  h1{margin:10px 0 4px;font-size:clamp(26px,5vw,38px)}
+  header p{margin:0;color:var(--muted);font-size:18px}
+  main{max-width:900px;margin:0 auto;padding:8px 16px 48px;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+  a.card{display:flex;align-items:center;gap:16px;text-decoration:none;color:inherit;
+    background:var(--card);border:2px solid var(--line);border-radius:18px;padding:18px;
+    transition:transform .12s, border-color .12s, box-shadow .12s}
+  a.card:hover,a.card:focus-visible{transform:translateY(-3px);border-color:var(--accent);
+    box-shadow:0 6px 18px rgba(47,125,91,.15);outline:none}
+  .num{flex:0 0 auto;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;
+    background:var(--accent);color:#fff;font-weight:700;font-size:22px}
+  .card:nth-child(even) .num{background:var(--accent2)}
+  .title{font-size:19px;font-weight:600}
+  .sub{font-size:14px;color:var(--muted);margin-top:3px}
+  a.card.soon{pointer-events:none;opacity:.55}
+  a.card.soon .num{background:var(--soon)}
+  footer{text-align:center;color:var(--muted);font-size:13px;padding-bottom:24px}
+</style>
+</head>
+<body>
+<header>
+  <div class="globe">🌍</div>
+  <h1>Lebensraum Erde</h1>
+  <p>GPG Klasse 5 – wähle deine Übung</p>
+</header>
+
+<main id="liste"></main>
+
+<footer>Tipp: Scanne den QR-Code an der Tafel, um direkt zur Übung zu kommen.</footer>
+
+<script>
+/* ============================================================
+   HIER ANPASSEN:
+   - titel: Thema der Stunde
+   - fertig: true = Übung ist online, false = Karte wird grau
+   ============================================================ */
+const UEBUNGEN = [
+  { nr: "2.1", ordner: "2-1", titel: "Thema 2.1", fertig: false },
+  { nr: "2.2", ordner: "2-2", titel: "Thema 2.2", fertig: false },
+  { nr: "2.3", ordner: "2-3", titel: "Thema 2.3", fertig: false },
+  { nr: "2.4", ordner: "2-4", titel: "Thema 2.4", fertig: false },
+  { nr: "2.5", ordner: "2-5", titel: "Thema 2.5", fertig: false },
+  { nr: "2.6", ordner: "2-6", titel: "Thema 2.6", fertig: false },
+  { nr: "2.7", ordner: "2-7", titel: "Thema 2.7", fertig: false },
+  { nr: "2.8", ordner: "2-8", titel: "Thema 2.8", fertig: false },
+  { nr: "2.9", ordner: "2-9", titel: "Thema 2.9", fertig: false },
+];
+
+const liste = document.getElementById("liste");
+for (const u of UEBUNGEN) {
+  const a = document.createElement("a");
+  a.className = "card" + (u.fertig ? "" : " soon");
+  a.href = u.ordner + ".html";
+  a.innerHTML =
+    `<div class="num">${u.nr}</div>
+     <div><div class="title">${u.titel}</div>
+     <div class="sub">${u.fertig ? "Übung starten →" : "kommt bald"}</div></div>`;
+  liste.appendChild(a);
+}
+</script>
+</body>
+</html>
