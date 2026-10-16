@@ -240,7 +240,7 @@ select{font:900 1rem var(--body);padding:8px;border-radius:10px;border:2px solid
 <div class="conf" id="conf"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script>
 /* ---------- Fragen ---------- */
 var SET1=[
@@ -581,9 +581,12 @@ function showWin(tm){busy=false;queue=[];
 
 /* ================= Online: zwei Tablets (Test) =================
    Jede Aktion wird an das andere Tablet geschickt und auf beiden gleich ausgeführt. */
-var online=false,isHost=false,me=0,peer=null,conn=null,busy=false,queue=[],lostConn=false,PFX='hob26-20fragen-';
+var online=false,isHost=false,me=0,conn=null,busy=false,queue=[],lostConn=false;
+/* Verbindung über einen öffentlichen Vermittlungsserver (MQTT über WebSocket):
+   funktioniert auch, wenn die Tablets in verschiedenen Netzen sind (WLAN, mobile Daten). */
+var BROKERS=['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt'],TOPIC='hob26/20fragen/v1/',client=null,myId=Math.random().toString(36).slice(2),started=false,joinTimer=null;
 function myTurn(){return !online||cur===me}
-function act(ev){if(online&&conn&&conn.open){try{conn.send(ev)}catch(e){}}apply(ev)}
+function act(ev){if(online&&conn){try{conn.send(ev)}catch(e){}}apply(ev)}
 function onData(ev){if(ev&&ev.t==='start'){apply(ev);return}if(busy)queue.push(ev);else apply(ev)}
 function flush(){while(queue.length&&!busy)apply(queue.shift())}
 function apply(ev){
@@ -592,31 +595,40 @@ function apply(ev){
   else if(ev.t==='ans'){var b=document.querySelector('#ma button[data-k="'+ev.k+'"]');if(b)b._answer()}
   else if(ev.t==='go')doGo();
 }
-function startOnline(ev){teams=ev.teams.map(function(x){return{a:x.a,n:x.n,p:0}});me=isHost?0:1;cur=0;setIdx=0;busy=false;queue=[];
+function startOnline(ev){started=true;clearTimeout(joinTimer);teams=ev.teams.map(function(x){return{a:x.a,n:x.n,p:0}});me=isHost?0:1;cur=0;setIdx=0;busy=false;queue=[];
   $('win').hidden=true;$('modal').hidden=true;$('film').hidden=true;$('setup').hidden=true;$('game').hidden=false;$('topbar').hidden=true;buildTrack();buildBoard();upd();}
 function netMsg(t){$('netMsg').textContent=t}
-function lost(){lostConn=true;if(!$('game').hidden)upd();else netMsg('Die Verbindung wurde getrennt.')}
+function lost(){if(!started)return;lostConn=true;if(!$('game').hidden)upd()}
+function found(){if(lostConn){lostConn=false;if(!$('game').hidden)upd()}}
 function setMode(on){online=on;$('mLocal').setAttribute('aria-pressed',!on);$('mOnline').setAttribute('aria-pressed',on);
   $('localTeams').hidden=on;$('localGo').hidden=on;$('netPanel').hidden=!on;buildSetup()}
 $('mLocal').onclick=function(){setMode(false)};$('mOnline').onclick=function(){setMode(true)};
-function needPeer(){if(typeof Peer==='undefined'){netMsg('Die Verbindungsfunktion konnte nicht geladen werden. Ist das Tablet im Internet?');return false}return true}
-function closePeer(){try{if(conn)conn.close();if(peer)peer.destroy()}catch(e){}conn=null;peer=null}
-$('hostBtn').onclick=function(){if(!needPeer())return;closePeer();isHost=true;lostConn=false;
+function closeNet(){try{if(client)client.end(true)}catch(e){}client=null;conn=null;started=false;clearTimeout(joinTimer)}
+/* Verbinden mit dem ersten erreichbaren Server; ruft ready(topic) auf */
+function connectNet(code,onMsg,ready,bi){bi=bi||0;
+  if(typeof mqtt==='undefined'){netMsg('Die Verbindungsfunktion konnte nicht geladen werden. Ist das Tablet im Internet?');return}
+  if(bi>=BROKERS.length){netMsg('Keine Verbindung zum Server möglich. Vielleicht sperrt das Netzwerk die Verbindung – mit mobilen Daten oder Hotspot probieren.');return}
+  var topic=TOPIC+code,done=false,c=mqtt.connect(BROKERS[bi],{clientId:'gpg5_'+myId+'_'+bi,clean:true,connectTimeout:6000,reconnectPeriod:2000,keepalive:20});
+  var fail=setTimeout(function(){if(done)return;done=true;try{c.end(true)}catch(e){}connectNet(code,onMsg,ready,bi+1)},7000);
+  c.on('connect',function(){if(done&&client!==c)return;
+    c.subscribe(topic,{qos:1},function(err){if(err)return;if(!done){done=true;clearTimeout(fail);client=c;
+      conn={send:function(ev){c.publish(topic,JSON.stringify({from:myId,ev:ev}),{qos:1})}};ready(topic)}found()})});
+  c.on('message',function(t,payload){var m;try{m=JSON.parse(payload.toString())}catch(e){return}if(!m||m.from===myId)return;found();onMsg(m.ev)});
+  c.on('offline',lost);c.on('close',lost);
+  c.on('error',function(){});
+}
+$('hostBtn').onclick=function(){closeNet();isHost=true;lostConn=false;
   var code=String(1000+Math.floor(Math.random()*9000));netMsg('Spiel wird erstellt …');
-  peer=new Peer(PFX+code);
-  peer.on('open',function(){$('codeBox').hidden=false;$('bigCode').textContent=code;netMsg('Warte auf das zweite Tablet: dort „Zwei Tablets“ wählen, den Code eingeben und auf „Mitspielen“ tippen.')});
-  peer.on('connection',function(c){if(conn&&conn.open){c.close();return}conn=c;
-    c.on('data',function(d){if(d&&d.t==='hello'){act({t:'start',teams:[{a:draft[0].a,n:(draft[0].n||'').trim()||'Team 1'},{a:d.a,n:d.n}]})}else onData(d)});
-    c.on('close',lost)});
-  peer.on('error',function(e){if(e.type==='unavailable-id'){$('hostBtn').onclick();return}netMsg('Verbindung fehlgeschlagen ('+e.type+'). Bitte noch einmal versuchen.')});
+  connectNet(code,function(ev){
+    if(ev.t==='hello'){if(started)return;act({t:'start',teams:[{a:draft[0].a,n:(draft[0].n||'').trim()||'Team 1'},{a:ev.a,n:ev.n}]})}
+    else onData(ev)},
+    function(){$('codeBox').hidden=false;$('bigCode').textContent=code;netMsg('Warte auf das zweite Tablet …')});
 };
-$('joinBtn').onclick=function(){if(!needPeer())return;var code=($('codeIn').value||'').replace(/\D/g,'');if(code.length!==4){netMsg('Bitte den 4-stelligen Code eingeben.');return}
-  closePeer();isHost=false;lostConn=false;netMsg('Verbinde …');
-  peer=new Peer();
-  peer.on('open',function(){conn=peer.connect(PFX+code,{reliable:true});
-    conn.on('open',function(){conn.send({t:'hello',a:draft[0].a,n:(draft[0].n||'').trim()||'Team 2'});netMsg('Verbunden! Das Spiel startet gleich …')});
-    conn.on('data',onData);conn.on('close',lost)});
-  peer.on('error',function(e){netMsg(e.type==='peer-unavailable'?'Kein Spiel mit diesem Code gefunden. Stimmt der Code?':'Verbindung fehlgeschlagen ('+e.type+').')});
+$('joinBtn').onclick=function(){var code=($('codeIn').value||'').replace(/\D/g,'');if(code.length!==4){netMsg('Bitte den 4-stelligen Code eingeben.');return}
+  closeNet();isHost=false;lostConn=false;netMsg('Verbinde …');
+  connectNet(code,function(ev){onData(ev)},function(){
+    conn.send({t:'hello',a:draft[0].a,n:(draft[0].n||'').trim()||'Team 2'});netMsg('Verbunden – warte auf das erste Tablet …');
+    joinTimer=setTimeout(function(){if(!started)netMsg('Kein Spiel mit diesem Code gefunden. Stimmt der Code? Ist Tablet 1 noch auf der Seite?')},10000)});
 };
 
 buildSetup();
