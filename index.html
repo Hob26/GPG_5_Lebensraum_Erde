@@ -24,8 +24,9 @@
   a.card:hover,a.card:focus-visible{transform:translateY(-3px);border-color:var(--accent);
     box-shadow:0 6px 18px rgba(47,125,91,.15);outline:none}
   .num{flex:0 0 auto;width:64px;height:64px;border-radius:50%;display:grid;place-items:center;
-    background:var(--accent);color:#fff;font-weight:700;font-size:22px}
-  .card:nth-child(even) .num{background:var(--accent2)}
+    background:#e6f1ea;font-size:34px;line-height:1}
+  .card:nth-child(even) .num{background:#e3eef7}
+  .nr{font-size:13px;font-weight:800;letter-spacing:.06em;color:var(--accent);text-transform:uppercase}
   .title{font-size:19px;font-weight:600}
   .sub{font-size:14px;color:var(--muted);margin-top:3px}
   a.card.soon{pointer-events:none;opacity:.55}
@@ -51,16 +52,16 @@
    - fertig: true = Übung ist online, false = Karte wird grau
    ============================================================ */
 const UEBUNGEN = [
-  { nr: "2.1", ordner: "2-1", titel: "Unser Sonnensystem", fertig: true },
-  { nr: "2.2", ordner: "2-2", titel: "Reise zum Erdmittelpunkt", fertig: true },
-  { nr: "2.3", ordner: "2-3", titel: "Kontinente-Detektiv", fertig: true },
-  { nr: "2.4", ordner: "2-4", titel: "Kompass-Kapitän", fertig: true },
-  { nr: "2.5", ordner: "2-5", titel: "Tag-und-Nacht-Globus", fertig: true },
-  { nr: "2.6", ordner: "2-6", titel: "Koordinaten-Rettungseinsatz", fertig: true },
-  { nr: "2.7", ordner: "2-7", titel: "Atlas-Detektiv", fertig: true },
-  { nr: "2.8", ordner: "2-8", titel: "Klimazonen-Sortierer", fertig: true },
-  { nr: "2.9", ordner: "2-9", titel: "Vegetations-Expedition", fertig: true },
-  { nr: "🏆", ordner: "wiederholung", titel: "Erde-Champion (Wiederholung)", fertig: true },
+  { nr: "2.1", icon: "☀️", ordner: "2-1", titel: "Unser Sonnensystem", fertig: true },
+  { nr: "2.2", icon: "🌋", ordner: "2-2", titel: "Reise zum Erdmittelpunkt", fertig: true },
+  { nr: "2.3", icon: "🗺️", ordner: "2-3", titel: "Kontinente-Detektiv", fertig: true },
+  { nr: "2.4", icon: "🧭", ordner: "2-4", titel: "Kompass-Kapitän", fertig: true },
+  { nr: "2.5", icon: "🌗", ordner: "2-5", titel: "Tag-und-Nacht-Globus", fertig: true },
+  { nr: "2.6", icon: "🌐", ordner: "2-6", titel: "Koordinaten-Rettungseinsatz", fertig: true },
+  { nr: "2.7", icon: "📖", ordner: "2-7", titel: "Atlas-Detektiv", fertig: true },
+  { nr: "2.8", icon: "🌡️", ordner: "2-8", titel: "Klimazonen-Sortierer", fertig: true },
+  { nr: "2.9", icon: "🌳", ordner: "2-9", titel: "Vegetations-Expedition", fertig: true },
+  { nr: "Teste dich", icon: "🏆", ordner: "wiederholung", titel: "In 20 Fragen um die Welt", fertig: true },
 ];
 
 const liste = document.getElementById("liste");
@@ -69,8 +70,8 @@ for (const u of UEBUNGEN) {
   a.className = "card" + (u.fertig ? "" : " soon");
   a.href = u.ordner + ".html";
   a.innerHTML =
-    `<div class="num">${u.nr}</div>
-     <div><div class="title">${u.titel}</div>
+    `<div class="num" aria-hidden="true">${u.icon}</div>
+     <div><div class="nr">${u.nr}</div><div class="title">${u.titel}</div>
      <div class="sub">${u.fertig ? "Übung starten →" : "kommt bald"}</div></div>`;
   liste.appendChild(a);
 }
