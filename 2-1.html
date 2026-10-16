@@ -117,9 +117,16 @@ const INFO={
  Jupiter:{kind:"5. Planet",cap:"Foto: NASA / Hubble-Teleskop",facts:["Der größte Planet: über 1.300 Erden passen hinein.","Er besteht vor allem aus Gas – landen kann man nicht.","Der rote Fleck ist ein Sturm, größer als die Erde.","Er hat über 90 Monde."],car:"ca. 670 Jahre",probe:"ca. 5 Jahre",dist:"mind. 590 Millionen km"},
  Saturn:{kind:"6. Planet",cap:"Foto: NASA / Hubble-Teleskop",facts:["Bekannt für seine Ringe aus Eis und Gesteinsbrocken.","Er ist so leicht, dass er in einer riesigen Badewanne schwimmen würde.","Er hat mehr Monde als jeder andere Planet.","Ein Jahr dauert 29 Erdjahre."],car:"ca. 1.400 Jahre",probe:"ca. 7 Jahre",dist:"mind. 1,2 Milliarden km"},
  Uranus:{kind:"7. Planet",cap:"Foto: NASA / Voyager 2",facts:["Er liegt auf der Seite und „rollt“ um die Sonne.","Eisig kalt: bis zu −220 °C.","Das Gas Methan färbt ihn blau-grün.","Ein Jahr dauert 84 Erdjahre."],car:"ca. 3.000 Jahre",probe:"ca. 8½ Jahre",dist:"mind. 2,6 Milliarden km"},
+ Mond:{kind:"Der Mond der Erde – kein Planet",cap:"Zeichnung (kein Foto)",facts:["Der Mond kreist in etwa 27 Tagen einmal um die Erde.","Er leuchtet nicht selbst: Die Sonne strahlt ihn an.","Er hat keine Luft und kein Wasser – überall sind Krater.","1969 betraten die ersten Menschen den Mond (Apollo 11)."],car:"ca. 160 Tage",probe:"ca. 3 Tage (wie Apollo 11)",dist:"ca. 384.000 km"},
  Neptun:{kind:"8. Planet",cap:"Foto: NASA / Voyager 2",facts:["Der äußerste Planet, am weitesten von der Sonne entfernt.","Hier wehen die stärksten Stürme: über 2.000 km/h.","Ein Jahr dauert 165 Erdjahre.","Nur eine Raumsonde war je dort: Voyager 2 (1989)."],car:"ca. 4.900 Jahre",probe:"ca. 12 Jahre",dist:"mind. 4,3 Milliarden km"}
 };
 const start=[.3,2.1,4.4,1.2,5.6,3.3,0.8,2.6];
+IMG.Mond=(function(){const c=document.createElement('canvas');c.width=c.height=400;const g=c.getContext('2d');let sd=7;const r=()=>{sd=(sd*16807)%2147483647;return(sd-1)/2147483646;};
+  g.fillStyle='#000';g.fillRect(0,0,400,400);g.save();g.beginPath();g.arc(200,200,170,0,7);g.clip();
+  const b=g.createRadialGradient(150,140,20,200,200,175);b.addColorStop(0,'#e9e7e1');b.addColorStop(.7,'#b9b6ae');b.addColorStop(1,'#77746d');g.fillStyle=b;g.fillRect(0,0,400,400);
+  [[150,150,55],[230,130,40],[250,210,48],[175,230,35]].forEach(m=>{g.fillStyle='rgba(95,92,86,.45)';g.beginPath();g.ellipse(m[0],m[1],m[2],m[2]*.8,r()*3,0,7);g.fill();});
+  for(let i=0;i<70;i++){const x=40+r()*320,y=40+r()*320,cr=3+r()*r()*18;g.fillStyle='rgba(70,68,64,.35)';g.beginPath();g.arc(x,y,cr,0,7);g.fill();g.fillStyle='rgba(255,255,255,.25)';g.beginPath();g.arc(x-cr*.25,y-cr*.25,cr*.75,0,7);g.fill();}
+  const sh=g.createRadialGradient(140,130,120,200,200,190);sh.addColorStop(0,'rgba(0,0,0,0)');sh.addColorStop(1,'rgba(0,0,0,.55)');g.fillStyle=sh;g.fillRect(0,0,400,400);g.restore();return c.toDataURL('image/jpeg',.9);})();
 const $=id=>document.getElementById(id);
 const cv=$('c'),ctx=cv.getContext('2d'),stage=$('stage');
 let W,H,dpr,days=0,running=true,showNames=true,showTimes=false,infoOn=true,zoomOn=true;
@@ -144,6 +151,7 @@ function draw(){
   // compute positions
   pos={Sonne:{x:cx,y:cy,r:Math.max(14,Rx*.05)}};
   P.forEach((p,i)=>{const a=start[i]-days/p[1]*Math.PI*2;pos[p[0]]={x:cx+Math.cos(a)*Rx*p[4],y:cy+Math.sin(a)*Ry*p[4],r:p[2]*scale};});
+  {const e=pos.Erde,ma=days/27.3*Math.PI*2,d=e.r*3.2;pos.Mond={x:e.x+Math.cos(ma)*d,y:e.y+Math.sin(ma)*d*.9,r:Math.max(2.6,e.r*.32)};}
   if(follow&&pos[follow]){const q=pos[follow];const c=$('card');const off=(!c.hidden&&W>640)?-(c.offsetWidth+56)/2:0;const offY=(!c.hidden&&W<=640)?-c.offsetHeight/2:0;panX=-(q.x-W/2)*z+off;panY=-(q.y-H/2)*z+offY;}
   ctx.setTransform(dpr*z,0,0,dpr*z,dpr*(W/2*(1-z)+panX),dpr*(H/2*(1-z)+panY));
   ctx.lineWidth=1.2/z;
@@ -167,6 +175,10 @@ function draw(){
       ctx.fillText(label,x,y-r-7*scale/Math.sqrt(z));
     }
   });
+  {const m=pos.Mond;const mg=ctx.createRadialGradient(m.x-m.r*.4,m.y-m.r*.4,m.r*.1,m.x,m.y,m.r);mg.addColorStop(0,"#ffffff");mg.addColorStop(.3,"#cfcbc2");mg.addColorStop(1,"#6f6c66");
+    ctx.fillStyle=mg;ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,7);ctx.fill();
+    if(selected==="Mond"||hoverName==="Mond"){ctx.strokeStyle="#e8a33d";ctx.lineWidth=2/z;ctx.beginPath();ctx.arc(m.x,m.y,m.r+6/z,0,7);ctx.stroke();}
+    if(showNames&&z>=2){ctx.font=`800 ${fs*.8}px Nunito, sans-serif`;ctx.fillStyle="#d9d6cf";ctx.fillText("Mond",m.x,m.y+m.r+fs*.9);}}
   if(selected==="Sonne"||hoverName==="Sonne"){ctx.strokeStyle="#e8a33d";ctx.lineWidth=2.5/z;ctx.beginPath();ctx.arc(cx,cy,sr+9/z,0,7);ctx.stroke();}
   ctx.font=`800 ${fs}px Nunito, sans-serif`;ctx.fillStyle="#3b2a00";ctx.fillText("Sonne",cx,cy+4*scale/Math.sqrt(z));
 }
@@ -179,7 +191,7 @@ requestAnimationFrame(loop);
 
 /* ---------- Treffer-Test ---------- */
 function hit(sx,sy){const [wx,wy]=toWorld(sx,sy);let best=null,bd=1e9;
-  for(const n in pos){const q=pos[n];const d=Math.hypot(q.x-wx,q.y-wy);const tol=Math.max(q.r,16/z);if(d<=tol&&d<bd){best=n;bd=d;}}return best;}
+  for(const n in pos){const q=pos[n];const d=Math.hypot(q.x-wx,q.y-wy);const tol=n==='Mond'?Math.max(q.r+3,9/z):Math.max(q.r,16/z);if(d<=tol&&d<bd){best=n;bd=d;}}return best;}
 
 /* ---------- Zoom ---------- */
 function setZoom(nz,ax=W/2,ay=H/2){if(!zoomOn)return;nz=Math.max(1,Math.min(12,nz));
@@ -222,7 +234,7 @@ function closeCard(){$('card').hidden=true;selected=null;}
 $('cardX').onclick=closeCard;$('cClose').onclick=closeCard;
 $('cFollow').onclick=()=>{const n=selected;if(!n)return;
   if(follow===n){follow=null;$('cFollow').textContent='Hinzoomen';return;}
-  follow=n==="Sonne"?null:n;const target=n==="Sonne"?3:(n==="Jupiter"||n==="Saturn"?4:6);
+  follow=n==="Sonne"?null:n;const target=n==="Sonne"?3:(n==="Jupiter"||n==="Saturn"?4:(n==="Mond"?9:6));
   z=target;if(n==="Sonne"){panX=0;panY=0;}$('cFollow').textContent=follow?'Folgen beenden':'Hinzoomen';};
 window.addEventListener('keydown',e=>{if(e.key==='Escape')closeCard();});
 
@@ -303,8 +315,8 @@ function init3d(){
       ring.rotation.x=-Math.PI/2;grp.add(ring);}
     if(p[0]==="Erde"){const halo=new THREE.Mesh(new THREE.SphereGeometry(rad*1.06,32,24),new THREE.MeshBasicMaterial({color:0x8fd0ff,transparent:true,opacity:.18,side:THREE.BackSide}));grp.add(halo);
       // Mond
-      const moon=new THREE.Mesh(new THREE.SphereGeometry(rad*.27,24,16),new THREE.MeshStandardMaterial({color:0xbdbab2,roughness:1}));scene.add(moon);bodies.Mond={mesh:moon};}
-    bodies[p[0]]={grp,mesh:m,R,r:rad,i};
+      const moon=new THREE.Mesh(new THREE.SphereGeometry(rad*.27,24,16),new THREE.MeshStandardMaterial({color:0xbdbab2,roughness:1}));moon.userData.name='Mond';scene.add(moon);pickables.push(moon);bodies.Mond={mesh:moon,grp:moon,r:rad*.27};}
+    bodies[p[0]]=Object.assign(bodies[p[0]]||{},{grp,mesh:m,R,r:rad,i});
   });
   // Beschriftungen
   const labels={};for(const n of ['Sonne',...P.map(p=>p[0])]){const d=document.createElement('div');d.className='lbl';d.textContent=n;box3.appendChild(d);labels[n]=d;}
