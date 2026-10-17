@@ -54,12 +54,17 @@ a{color:var(--blue)}
 #map .right{padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
 .mapbox{position:relative;width:100%;aspect-ratio:2/1;border-radius:16px;overflow:hidden;background:#0b1a2b;box-shadow:0 6px 20px #0002}
 .mapinner{position:absolute;inset:0;background:var(--tex) center/100% 100% no-repeat;transform-origin:0 0}
-.mapinner.fly{transition:transform 1.3s cubic-bezier(.55,0,.25,1)}
+.mapinner.fly{transition:transform 1.9s cubic-bezier(.65,0,.35,1)}
 .mapinner.fly .pin,.mapinner.fly .lines,.mapinner.fly .dot,.mapinner.fly .bline{opacity:0;transition:opacity .4s}
 .mapinner.fly .band{opacity:0;transition:opacity .6s}
 .mapinner .detail{position:absolute;opacity:0;transition:opacity .9s .25s;pointer-events:none;image-rendering:auto}
-.landing{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transform:scale(1.25);transition:opacity .8s ease, transform .9s cubic-bezier(.2,.7,.3,1);z-index:8}
+.landing{position:fixed;z-index:80;background-size:cover;background-position:center;border-radius:16px;opacity:0;transform:scale(1.12);
+  transition:opacity 1s ease, transform 1.4s cubic-bezier(.25,.6,.3,1), left .9s cubic-bezier(.65,0,.35,1), top .9s cubic-bezier(.65,0,.35,1), width .9s cubic-bezier(.65,0,.35,1), height .9s cubic-bezier(.65,0,.35,1), border-radius .9s ease}
 .landing.on{opacity:1;transform:scale(1)}
+.landing.full{left:0!important;top:0!important;width:100vw!important;height:100vh!important;border-radius:0}
+.landing.out{opacity:0;transition:opacity .8s ease}
+#station.enter .main{animation:enterMain .8s cubic-bezier(.25,.6,.3,1) both}
+@keyframes enterMain{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 .plane{position:absolute;width:42px;height:42px;margin:-21px 0 0 -21px;z-index:6;pointer-events:none;filter:drop-shadow(0 3px 4px #0009)}
 .trail{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
 .pin.locked{filter:grayscale(1) brightness(.75);cursor:not-allowed}
@@ -646,11 +651,22 @@ function flyTo(i){
     requestAnimationFrame(() => { det.style.opacity = 1; inner.style.transform = `translate(${tx}px, ${ty}px) scale(${k})`; });
     plane.style.transition = trail.style.transition = "opacity .5s"; plane.style.opacity = 0; trail.style.opacity = 0;
     // 2) Landeanflug: Überblendung ins Foto des Reiseziels
+    // Foto blendet über der Karte ein, wächst auf ganze Bildschirmgröße, dann erscheint die Station darunter
     setTimeout(() => {
+      const r = mb.getBoundingClientRect();
       const land = el("div",{class:"landing"}); land.style.backgroundImage = `url(${src(s.pics[0].k)})`;
-      mb.append(land); requestAnimationFrame(() => land.classList.add("on"));
-      setTimeout(() => { flying = false; openStation(i); inner.classList.remove("fly"); inner.style.transform = ""; trail.remove(); plane.remove(); det.remove(); land.remove(); }, 900);
-    }, 1700);
+      land.style.left = r.left + "px"; land.style.top = r.top + "px"; land.style.width = r.width + "px"; land.style.height = r.height + "px";
+      document.body.append(land);
+      requestAnimationFrame(() => requestAnimationFrame(() => land.classList.add("on")));
+      setTimeout(() => land.classList.add("full"), 1000);
+      setTimeout(() => {
+        flying = false; openStation(i);
+        inner.classList.remove("fly"); inner.style.transform = ""; trail.remove(); plane.remove(); det.remove();
+        const st = $("station"); st.classList.remove("enter"); void st.offsetWidth; st.classList.add("enter");
+        land.classList.add("out");
+        setTimeout(() => { land.remove(); st.classList.remove("enter"); }, 900);
+      }, 2000);
+    }, 1500);
   }
 }
 $("toPass").onclick = () => openPass();
