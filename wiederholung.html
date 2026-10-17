@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}</style></head><body>
-<title>In 20 Fragen um die Welt</title>
+<title>In 20 Fragen um die Welt – Online-Test</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Nunito:wght@600;800;900&display=swap">
@@ -41,6 +41,15 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 .avs button:disabled{opacity:.3;cursor:default}
 select{font:900 1rem var(--body);padding:8px;border-radius:10px;border:2px solid var(--line);background:var(--card);color:var(--ink)}
 
+/* ---------- Online ---------- */
+.modes{display:flex;flex-wrap:wrap;gap:8px}
+.modes button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold)}
+.net{display:grid;gap:12px}
+.net input{font:900 1.6rem var(--body);width:5.5em;text-align:center;letter-spacing:.2em;border:2px solid var(--line);border-radius:12px;padding:6px 8px;background:#fff;color:var(--ink)}
+.netmsg{font-weight:900;font-size:1.1rem;min-height:1.4em;margin:0}
+.bigcode{font:900 clamp(2.4rem,9vw,4rem) var(--body);letter-spacing:.25em;color:var(--rust)}
+.wait{font-weight:900;color:var(--muted)}
+.answers.locked button{pointer-events:none}
 .howto{display:grid;gap:10px;margin-top:6px}
 .hrow{display:flex;gap:10px;align-items:center;font-size:1.02rem;line-height:1.35}
 .hi{font-size:1.6rem;flex:none;width:1.4em;text-align:center}
@@ -170,10 +179,22 @@ select{font:900 1rem var(--body);padding:8px;border-radius:10px;border:2px solid
         <div class="hrow"><span class="hi">🏆</span><span>Wer zuerst wieder in Deutschland ist, gewinnt!</span></div>
       </div>
     </div>
-    <div class="row"><label class="kicker" for="nTeams">Wie viele Teams?</label>
+    <div class="modes" role="group" aria-label="Spielart"><button class="btn ghost" id="mLocal" aria-pressed="true">Ein Gerät</button><button class="btn ghost" id="mOnline" aria-pressed="false">Zwei Tablets (Test)</button></div>
+    <div class="row" id="localTeams"><label class="kicker" for="nTeams">Wie viele Teams?</label>
       <select id="nTeams"><option value="1">1 (allein)</option><option value="2" selected>2 Teams</option><option value="3">3 Teams</option><option value="4">4 Teams</option></select></div>
     <div id="teamRows" class="setup"></div>
-    <div class="row"><button class="btn" id="go">🌍 Los geht’s!</button></div>
+    <div class="row" id="localGo"><button class="btn" id="go">🌍 Los geht’s!</button></div>
+    <div class="box net" id="netPanel" hidden>
+      <div class="howto" style="margin:0">
+        <div class="hrow"><span class="hi">1️⃣</span><span><b>Tablet 1:</b> „Spiel erstellen“ tippen → Code erscheint</span></div>
+        <div class="hrow"><span class="hi">2️⃣</span><span><b>Tablet 2:</b> Code eingeben → „Mitspielen“</span></div>
+        <div class="hrow"><span class="hi">📶</span><span>Beide Tablets brauchen Internet.</span></div>
+      </div>
+      <div class="row"><button class="btn" id="hostBtn">Spiel erstellen</button></div>
+      <div class="row"><label class="kicker" for="codeIn">Code vom anderen Tablet</label><input id="codeIn" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="0000"><button class="btn" id="joinBtn">Mitspielen</button></div>
+      <div id="codeBox" hidden><div class="kicker">Dein Spiel-Code</div><div class="bigcode" id="bigCode"></div></div>
+      <p class="netmsg" id="netMsg" aria-live="polite"></p>
+    </div>
   </section>
 
   <!-- Spiel -->
@@ -219,6 +240,7 @@ select{font:900 1rem var(--body);padding:8px;border-radius:10px;border:2px solid
 <div class="conf" id="conf"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
 <script>
 /* ---------- Fragen ---------- */
 var SET1=[
@@ -396,8 +418,9 @@ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;
 /* ---------- Start-Bildschirm ---------- */
 var draft=[{a:"🦊",n:"Team 1"},{a:"🐧",n:"Team 2"},{a:"🐢",n:"Team 3"},{a:"🦁",n:"Team 4"}];
 function buildSetup(){
-  var n=+$('nTeams').value,box=$('teamRows');box.innerHTML='';
-  if(n===1&&draft[0].n==="Team 1")draft[0].n="Ich";
+  var n=online?1:+$('nTeams').value,box=$('teamRows');box.innerHTML='';
+  if(n===1&&!online&&draft[0].n==="Team 1")draft[0].n="Ich";
+  if(online&&draft[0].n==="Ich")draft[0].n="Team 1";
   if(n>1&&draft[0].n==="Ich")draft[0].n="Team 1";
   for(var i=0;i<n;i++)(function(i){
     var r=document.createElement('div');r.className='teamrow';
@@ -416,7 +439,7 @@ $('go').onclick=function(){
   cur=0;setIdx=0;$('setup').hidden=true;$('game').hidden=false;$('topbar').hidden=false;buildTrack();buildBoard();upd();
 };
 $('restart').onclick=function(){$('game').hidden=true;$('topbar').hidden=true;$('setup').hidden=false;buildSetup()};
-$('again').onclick=function(){$('win').hidden=true;$('conf').innerHTML='';$('restart').onclick()};
+$('again').onclick=function(){$('win').hidden=true;$('conf').innerHTML='';if(online&&conn){act({t:'start',teams:teams.map(function(x){return{a:x.a,n:x.n,p:0}})});return}$('restart').onclick()};
 
 /* ---------- Erdkugel ---------- */
 var proj,gpath,rot=[-10,-35],G={},ZCOL={regen:"#2f7d3c",savanne:"#d6aa45",sahara:"#e39a4f",outback:"#c8643a",kaktus:"#c98a5e",hartlaub:"#8f9a4e",laub:"#d9762b",nadel:"#2f5a3a",tundra:"#9a7a56",eis:"#8fc0dc"};
@@ -469,7 +492,7 @@ function walkGlobe(tm,from,to,done){
 function placeTokens(){if(!G.toks)return;draw()}
 
 function upd(){
-  var tm=teams[cur];$('turn').innerHTML=teams.length>1?(tm.a+' '+esc(tm.n)+' ist dran'):'Wandere einmal um die Erde!';
+  var tm=teams[cur];$('turn').innerHTML=lostConn?'⚠️ Verbindung zum anderen Tablet getrennt':online?(myTurn()?'🟢 Ihr seid dran: '+tm.a+' '+esc(tm.n):'⏳ '+tm.a+' '+esc(tm.n)+' ist dran'):teams.length>1?(tm.a+' '+esc(tm.n)+' ist dran'):'Wandere einmal um die Erde!';
   var s=$('standings');s.innerHTML='';
   teams.forEach(function(x,i){var f=FIELDS[Math.min(x.p,GOAL-1)],d=document.createElement('div');d.className='st'+(i===cur&&teams.length>1?' on':'');
     d.innerHTML='<span class="a">'+x.a+'</span><span class="n">'+esc(x.n)+'</span><span class="p">'+Math.min(x.p,GOAL)+' / '+GOAL+'</span><span class="bar"><i style="width:'+(Math.min(x.p,GOAL)/GOAL*100)+'%"></i></span>';
@@ -482,32 +505,35 @@ function buildBoard(){CATS=SETS[setIdx];var b=$('board');b.innerHTML='';
   CATS.forEach(function(c,ci){var d=document.createElement('div');d.className='cat';
     d.innerHTML='<h3><span class="e">'+c.e+'</span><span><span class="n">'+c.n+'</span><br>'+c.t+'</span></h3><div class="pts"></div>';
     [100,200,300].forEach(function(p,qi){var bt=document.createElement('button');bt.innerHTML=p+'<small>'+STEPS[qi]+' Felder</small>';
-      bt.setAttribute('aria-label',c.t.replace(/­/g,'')+', '+p+' Punkte, '+STEPS[qi]+' Felder');bt.onclick=function(){ask(ci,qi,bt)};d.querySelector('.pts').appendChild(bt)});
+      bt.setAttribute('aria-label',c.t.replace(/­/g,'')+', '+p+' Punkte, '+STEPS[qi]+' Felder');bt.onclick=function(){if(busy||!myTurn()||!$('modal').hidden)return;act({t:'ask',ci:ci,qi:qi,ord:shuffle([0,1,2])})};d.querySelector('.pts').appendChild(bt)});
     b.appendChild(d)});
   $('info').textContent='Wähle ein Thema und eine Schwierigkeit: 100 = leicht, 200 = mittel, 300 = Profi.';
 }
-function ask(ci,qi,bt){var c=CATS[ci],q=c.q[qi],tm=teams[cur];open={bt:bt,qi:qi,ok:false};
+function ask(ci,qi,ordIn){var bt=document.querySelectorAll('#board .cat')[ci].querySelectorAll('.pts button')[qi];var c=CATS[ci],q=c.q[qi],tm=teams[cur];open={bt:bt,qi:qi,ok:false};
   $('mk').textContent=c.n+' '+c.t.replace(/­/g,'')+' · '+((qi+1)*100)+' · '+'⭐'.repeat(qi+1);
-  $('mt').textContent=teams.length>1?tm.a+' '+tm.n+' ist dran':tm.a;
+  $('mt').textContent=online?(myTurn()?'Ihr seid dran':tm.a+' '+tm.n+' antwortet …'):(teams.length>1?tm.a+' '+tm.n+' ist dran':tm.a);
   $('me').textContent=c.e;$('mq').textContent=q[0];
   var box=$('ma');box.innerHTML='';delete box.dataset.done;$('mm').textContent='';$('mm').className='msg';$('mn').hidden=true;
-  var ord=shuffle([0,1,2]);ord.forEach(function(k){var b=document.createElement('button');b.textContent=q[1][k];
-    b.onclick=function(){if(box.dataset.done)return;box.dataset.done=1;var m=$('mm');
+  box.classList.toggle('locked',!myTurn());
+  var ord=ordIn||shuffle([0,1,2]);ord.forEach(function(k){var b=document.createElement('button');b.textContent=q[1][k];b.dataset.k=k;
+    b.onclick=function(){if(!myTurn())return;act({t:'ans',k:k})};
+    b._answer=function(){if(box.dataset.done)return;box.dataset.done=1;var m=$('mm');
       if(k===0){b.className='ok';open.ok=true;m.textContent='Richtig! 🎉 '+tm.a+' wandert '+STEPS[qi]+' Felder weiter.';m.className='msg ok';bt.className='r';$('mn').textContent='Losgehen ➜'}
       else{b.className='bad';box.children[ord.indexOf(0)].className='ok';m.textContent='Leider falsch. Richtig ist: '+q[1][0]+(tm.p>0?' · '+Math.min(tm.p,BACK[qi])+(Math.min(tm.p,BACK[qi])===1?' Feld':' Felder')+' zurück.':'');m.className='msg bad';bt.className='w';$('mn').textContent=tm.p>0?'Weiter ➜':'Zurück zum Spielbrett ➜'}
-      bt.disabled=true;$('mn').hidden=false;$('mn').focus()};box.appendChild(b)});
+      bt.disabled=true;if(myTurn()){$('mn').hidden=false;$('mn').focus()}else{$('mt').textContent='Warte, bis '+tm.n+' weiterklickt …'}};box.appendChild(b)});
   $('modal').hidden=false;box.firstChild.focus();
 }
-$('mn').onclick=function(){$('modal').hidden=true;var tm=teams[cur],from=tm.p;
+$('mn').onclick=function(){if(!myTurn())return;act({t:'go'})};
+function doGo(){busy=true;$('modal').hidden=true;var tm=teams[cur],from=tm.p;
   var to=open.ok?Math.min(GOAL,from+STEPS[open.qi]):Math.max(0,from-BACK[open.qi]);
   var scenes=buildScenes(from,to);tm.p=to;
   var after=function(){upd();walkGlobe(tm,from,to,function(){if(to>=GOAL){setTimeout(function(){showWin(tm)},reduce?0:600);return}
     setTimeout(function(){nextTurn()},reduce?0:500)})};
   if(scenes.length)playFilm(tm,scenes,to<from,after);else after();
-};
+}
 function nextTurn(){cur=(cur+1)%teams.length;
   if(!$('board').querySelector('.pts button:not(:disabled)')){setIdx=(setIdx+1)%SETS.length;buildBoard();$('info').textContent='Alle Fragen sind verbraucht. Hier kommen neue Fragen, es geht weiter!'}
-  upd();turnTo(posLL(teams[cur].v),900);if(open&&open.bt&&!open.bt.disabled)open.bt.focus()}
+  upd();turnTo(posLL(teams[cur].v),900);busy=false;flush();if(open&&open.bt&&!open.bt.disabled)open.bt.focus()}
 
 /* ---------- Film ---------- */
 function buildScenes(from,to){var s=[];
@@ -541,7 +567,7 @@ document.addEventListener('keydown',function(e){
 });
 
 /* ---------- Sieg ---------- */
-function showWin(tm){
+function showWin(tm){busy=false;queue=[];
   $('wa').textContent=tm.a;
   $('wt').innerHTML=teams.length>1?esc(tm.n)+' ist als Erstes einmal <b>um die ganze Welt</b> gewandert!':'Du bist einmal <b>um die ganze Welt</b> gewandert!';
   $('ws').textContent=FIELDS.map(function(f){return f[0]}).join(' → ')+' → Deutschland';
@@ -552,6 +578,58 @@ function showWin(tm){
   if(!reduce){var c=$('conf'),em=['🎉','⭐','🌍','🏆','✨'];c.innerHTML='';
     for(var i=0;i<40;i++){var s=document.createElement('i');s.textContent=em[i%em.length];s.style.left=(Math.random()*100)+'%';s.style.animationDuration=(2.5+Math.random()*2.5)+'s';s.style.animationDelay=(Math.random()*1.5)+'s';c.appendChild(s)}}
 }
+
+/* ================= Online: zwei Tablets (Test) =================
+   Jede Aktion wird an das andere Tablet geschickt und auf beiden gleich ausgeführt. */
+var online=false,isHost=false,me=0,conn=null,busy=false,queue=[],lostConn=false;
+/* Verbindung über einen öffentlichen Vermittlungsserver (MQTT über WebSocket):
+   funktioniert auch, wenn die Tablets in verschiedenen Netzen sind (WLAN, mobile Daten). */
+var BROKERS=['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt'],TOPIC='hob26/20fragen/v1/',client=null,myId=Math.random().toString(36).slice(2),started=false,joinTimer=null;
+function myTurn(){return !online||cur===me}
+function act(ev){if(online&&conn){try{conn.send(ev)}catch(e){}}apply(ev)}
+function onData(ev){if(ev&&ev.t==='start'){apply(ev);return}if(busy)queue.push(ev);else apply(ev)}
+function flush(){while(queue.length&&!busy)apply(queue.shift())}
+function apply(ev){
+  if(ev.t==='start')startOnline(ev);
+  else if(ev.t==='ask')ask(ev.ci,ev.qi,ev.ord);
+  else if(ev.t==='ans'){var b=document.querySelector('#ma button[data-k="'+ev.k+'"]');if(b)b._answer()}
+  else if(ev.t==='go')doGo();
+}
+function startOnline(ev){started=true;clearTimeout(joinTimer);teams=ev.teams.map(function(x){return{a:x.a,n:x.n,p:0}});me=isHost?0:1;cur=0;setIdx=0;busy=false;queue=[];
+  $('win').hidden=true;$('modal').hidden=true;$('film').hidden=true;$('setup').hidden=true;$('game').hidden=false;$('topbar').hidden=true;buildTrack();buildBoard();upd();}
+function netMsg(t){$('netMsg').textContent=t}
+function lost(){if(!started)return;lostConn=true;if(!$('game').hidden)upd()}
+function found(){if(lostConn){lostConn=false;if(!$('game').hidden)upd()}}
+function setMode(on){online=on;$('mLocal').setAttribute('aria-pressed',!on);$('mOnline').setAttribute('aria-pressed',on);
+  $('localTeams').hidden=on;$('localGo').hidden=on;$('netPanel').hidden=!on;buildSetup()}
+$('mLocal').onclick=function(){setMode(false)};$('mOnline').onclick=function(){setMode(true)};
+function closeNet(){try{if(client)client.end(true)}catch(e){}client=null;conn=null;started=false;clearTimeout(joinTimer)}
+/* Verbinden mit dem ersten erreichbaren Server; ruft ready(topic) auf */
+function connectNet(code,onMsg,ready,bi){bi=bi||0;
+  if(typeof mqtt==='undefined'){netMsg('Die Verbindungsfunktion konnte nicht geladen werden. Ist das Tablet im Internet?');return}
+  if(bi>=BROKERS.length){netMsg('Keine Verbindung zum Server möglich. Vielleicht sperrt das Netzwerk die Verbindung – mit mobilen Daten oder Hotspot probieren.');return}
+  var topic=TOPIC+code,done=false,c=mqtt.connect(BROKERS[bi],{clientId:'gpg5_'+myId+'_'+bi,clean:true,connectTimeout:6000,reconnectPeriod:2000,keepalive:20});
+  var fail=setTimeout(function(){if(done)return;done=true;try{c.end(true)}catch(e){}connectNet(code,onMsg,ready,bi+1)},7000);
+  c.on('connect',function(){if(done&&client!==c)return;
+    c.subscribe(topic,{qos:1},function(err){if(err)return;if(!done){done=true;clearTimeout(fail);client=c;
+      conn={send:function(ev){c.publish(topic,JSON.stringify({from:myId,ev:ev}),{qos:1})}};ready(topic)}found()})});
+  c.on('message',function(t,payload){var m;try{m=JSON.parse(payload.toString())}catch(e){return}if(!m||m.from===myId)return;found();onMsg(m.ev)});
+  c.on('offline',lost);c.on('close',lost);
+  c.on('error',function(){});
+}
+$('hostBtn').onclick=function(){closeNet();isHost=true;lostConn=false;
+  var code=String(1000+Math.floor(Math.random()*9000));netMsg('Spiel wird erstellt …');
+  connectNet(code,function(ev){
+    if(ev.t==='hello'){if(started)return;act({t:'start',teams:[{a:draft[0].a,n:(draft[0].n||'').trim()||'Team 1'},{a:ev.a,n:ev.n}]})}
+    else onData(ev)},
+    function(){$('codeBox').hidden=false;$('bigCode').textContent=code;netMsg('Warte auf das zweite Tablet …')});
+};
+$('joinBtn').onclick=function(){var code=($('codeIn').value||'').replace(/\D/g,'');if(code.length!==4){netMsg('Bitte den 4-stelligen Code eingeben.');return}
+  closeNet();isHost=false;lostConn=false;netMsg('Verbinde …');
+  connectNet(code,function(ev){onData(ev)},function(){
+    conn.send({t:'hello',a:draft[0].a,n:(draft[0].n||'').trim()||'Team 2'});netMsg('Verbunden – warte auf das erste Tablet …');
+    joinTimer=setTimeout(function(){if(!started)netMsg('Kein Spiel mit diesem Code gefunden. Stimmt der Code? Ist Tablet 1 noch auf der Seite?')},10000)});
+};
 
 buildSetup();
 </script>
