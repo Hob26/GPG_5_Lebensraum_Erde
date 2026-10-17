@@ -528,8 +528,8 @@ const VIDEO_INTRO = {id:"loDqEQi6XKc", t:"Was ist eine Klimazone?", by:"SRF Kids
 /* ---------- Zustand ---------- */
 const KEY = "klimareise_v2";
 let S = {done:{}, name:"", z:{}};
-try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch(e) {}
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
+try { const raw = sessionStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch(e) {}
+function save(){ try { sessionStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
 
 const $ = id => document.getElementById(id);
 const el = (tag, attrs={}, html="") => { const e = document.createElement(tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (html) e.innerHTML = html; return e; };
